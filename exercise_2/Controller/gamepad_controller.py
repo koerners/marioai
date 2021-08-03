@@ -1,15 +1,17 @@
 from inputs import get_gamepad
 import math
 import threading
-from time import sleep
-import os
+import gym
+from gym_marioai import levels
+import keyboard
 
 
-#buttonStatus = {}
+# buttonStatus = {}
 
-class GamepadController (object):
+class GamepadController:
     MAX_TRIG_VAL = math.pow(2, 8)
     MAX_JOY_VAL = math.pow(2, 15)
+
 
     def __init__(self, env):
         self.env = env
@@ -33,52 +35,41 @@ class GamepadController (object):
         self.RightDPad = 0
         self.UpDPad = 0
         self.DownDPad = 0
-        #for b in self.BUTTONS: 
+        # for b in self.BUTTONS:
         #    buttonStatus[b] = 0
         self._monitor_thread = threading.Thread(target=self.monitor, args=())
         self._monitor_thread.daemon = True
-        self._monitor_thread.start() 
-        
-                
-    def read(self, env): # return the buttons/triggers that you care about in this methode
-        x = self.X
-        y = self.Y
-        a = self.A
-        b = self.B # b=1, x=2
-        udp = self.UpDPad
-        ddp = self.DownDPad
-        rdp = self.RightDPad
-        ldp = self.LeftDPad
-        return [a, b, x, y, udp, ddp, rdp, ldp]    # TODO: Map to env actions
+        self._monitor_thread.start()
+
 
     def monitor(self):
         while True:
             events = get_gamepad()
             for event in events:
                 if event.code == 'ABS_Y':
-                    self.LYAXIS = event.state / self.MAX_JOY_VAL # normalize between -1 and 1
+                    self.LYAXIS = event.state / self.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_X':
-                    self.LXAXIS = event.state / self.MAX_JOY_VAL # normalize between -1 and 1
+                    self.LXAXIS = event.state / self.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_RY':
-                    self.RYAXIS = event.state / self.MAX_JOY_VAL # normalize between -1 and 1
+                    self.RYAXIS = event.state / self.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_RX':
-                    self.RXAXIS = event.state / self.MAX_JOY_VAL # normalize between -1 and 1
+                    self.RXAXIS = event.state / self.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_Z':
-                    self.SCR_L = event.state / self.MAX_TRIG_VAL # normalize between 0 and 1
+                    self.SCR_L = event.state / self.MAX_TRIG_VAL  # normalize between 0 and 1
                 elif event.code == 'ABS_RZ':
-                    self.SCR_R = event.state / self.MAX_TRIG_VAL # normalize between 0 and 1
+                    self.SCR_R = event.state / self.MAX_TRIG_VAL  # normalize between 0 and 1
                 elif event.code == 'BTN_TL':
                     self.LeftBumper = event.state
                 elif event.code == 'BTN_TR':
                     self.RightBumper = event.state
                 elif event.code == 'BTN_SOUTH':
-                    self.B = event.state
+                    self.B = event.state  # Snes controller hat unten B
                 elif event.code == 'BTN_NORTH':
-                    self.Y = event.state
+                    self.X = event.state  # Snes controller hat oben X
                 elif event.code == 'BTN_WEST':
-                    self.X = event.state
+                    self.Y = event.state  # Snes controller hat links Y
                 elif event.code == 'BTN_EAST':
-                    self.A = event.state
+                    self.A = event.state  # Snes controller hat rechts A
                 elif event.code == 'BTN_THUMBL':
                     self.LeftThumb = event.state
                 elif event.code == 'BTN_THUMBR':
@@ -95,8 +86,6 @@ class GamepadController (object):
                     else:
                         self.LeftDPad = event.state
                         self.RightDPad = event.state
-                #elif event.code == 'ABS_HAT0X':
-                #    self.RightDPad = event.state
                 elif event.code == 'ABS_HAT0Y':
                     if event.state == 1:
                         self.DownDPad = event.state
@@ -105,36 +94,32 @@ class GamepadController (object):
                     else:
                         self.DownDPad = event.state
                         self.UpDPad = event.state
-                    #self.UpDPad = event.state
-                #elif event.code == 'ABS_HAT0Y':
-                #    self.DownDPad = event.state
-                #print(event.code)
-                
 
-    ########################################################################
-    
-      #  BUTTONS = [SCR_L, SCR_R, SELECT, START, X, Y, A, B, LeftBumper, RightBumper, LeftThumb, RightThumb, LeftDPad, RightDPad, UpDPad, DownDPad]
+    def read(self):
+        if (keyboard.is_pressed('shift+space+right')) or (self.RightDPad == 1 and self.B == 1 and self.A ==1):
+            return self.env.SPEED_JUMP_RIGHT
+        if keyboard.is_pressed('shift+space+left') or (self.LeftDPad == -11 and self.B == 1 and self.A ==1):
+            return self.env.SPEED_JUMP_LEFT
 
-       # buttonText = {
-       #     SCR_L: "SCR_L",
-       #     SCR_R: "SCR_R",
-       #     XAXIS: "XAXIS",
-       #     YAXIS: "YAXIS",
-       #     SELECT: "SELECT",
-       #     START: "START",
-       #     X: "X",
-       #     Y: "Y",
-       #     A: "A",
-       #     B: "B",
-      #      LeftDPad: "LeftDPad",
-      #      RightDPad: "RightDPad",
-     #       UpDPad: "UpDPad",
-     #       DownDPad: "DownDPad"
-    #    }
-    
-      
+        elif keyboard.is_pressed('space+right') or (self.RightDPad == 1 and self.A ==1):
+            return self.env.JUMP_RIGHT
+        elif keyboard.is_pressed('space+left') or (self.LeftDPad == -1 and self.A ==1):
+            return self.env.JUMP_LEFT
 
+        if keyboard.is_pressed('shift+right') or (self.RightDPad == 1 and self.B ==1):
+            return self.env.SPEED_RIGHT
+        if keyboard.is_pressed('shift+left') or (self.LeftDPad == -1 and self.B ==1):
+            return self.env.SPEED_LEFT
+
+        elif keyboard.is_pressed('right') or (self.RightDPad == 1):
+            return self.env.RIGHT
+        elif keyboard.is_pressed('left') or (self.LeftDPad == -1):
+            return self.env.LEFT
+        elif keyboard.is_pressed('down') or (self.DownDPad == 1):
+            return self.env.DOWN
+        elif keyboard.is_pressed('space') or (self.A == 1):
+            return self.env.JUMP
+        else:
+            return self.env.NOTHING
 
 
-
-        

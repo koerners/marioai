@@ -1,4 +1,4 @@
-from os import system
+from os import system, times
 import os
 from gym_setup import Env
 from qlearner import QLearner
